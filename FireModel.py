@@ -362,8 +362,6 @@ combined_df['fire'] = combined_df['fire'].map({'fire': 1, 'No fire': 0})
 ohe9 = pd.get_dummies(combined_df['VIOLATION'])
 ohe8 = pd.get_dummies(combined_df['full.code'])
 ohe10 = pd.get_dummies(combined_df['INSPECTION_RESULT'])
-#adsfasdf
-
 
 #concatenating the features together
 combined_df1 = pd.concat([combined_df[['PROPERTYADDRESS','PROPERTYHOUSENUM','CALL_CREATED_DATE','fire','fire_year']],ohe8,ohe9,ohe10], axis=1)
