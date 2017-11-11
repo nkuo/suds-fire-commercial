@@ -3,9 +3,12 @@
 This project is to further Michael's work on Fire Risk Modeling for the Pittsburgh fire department.
 
 To run:
-Put all data files in "data/" from Google_Drive/Data
-Install anaconda, then install everything via conda or pip within conda.
-Remember to create a virtual env within conda via:
+
+Put all data files in "data/" from Google_Drive/Data and run `FireModel.py`
+
+Install anaconda, then install everything via `conda` or `pip` within `conda`.
+
+Remember to create a virtual `env` within `conda` via:
 
 ```bash
 conda create -n name_of_my_env python
