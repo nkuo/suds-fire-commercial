@@ -7,11 +7,11 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 #%matplotlib inline
 
-# Reading plidata
+# Reading plidata - permits, licenses and inspection
 plidata = pd.read_csv('data/pli.csv',encoding = 'utf-8',dtype={'STREET_NUM':'str','STREET_NAME':'str'})
-#Reading city of Pittsburgh dataset
+#Reading city of Pittsburgh dataset - building info
 pittdata = pd.read_csv('data/pittdata.csv',dtype={'PROPERTYADDRESS':'str','PROPERTYHOUSENUM':'str','STATEDESC':'str'})
-#Reading 311 file
+#Reading 311 file - request for violation
 calldata = pd.read_csv('data/311request.csv')
 
 #Cleaning function for address column in calldata
@@ -34,6 +34,8 @@ calldata['street_name'] = calldata ['street_name'].str.replace('av','ave')
 calldata.Date = pd.to_datetime(calldata.Date)
 calldata['call_year'] = calldata['Date'].map(lambda x: x.year)
 
+#N- calldata not used after this..
+
 #removing extra whitespaces
 plidata['STREET_NAME'] = plidata['STREET_NAME'].str.strip()
 plidata['STREET_NUM'] = plidata['STREET_NUM'].str.strip()
@@ -53,9 +55,9 @@ plipca = pd.merge(pittdata, plidata[['PARCEL','INSPECTION_DATE','INSPECTION_RESU
 plipca = plipca.drop_duplicates()
 
 #dropping nas
-newpli = plipca.dropna(subset =['PARCEL','INSPECTION_DATE','INSPECTION_RESULT','VIOLATION'] )
+newpli = plipca.dropna(subset =['PARCEL','INSPECTION_DATE','INSPECTION_RESULT','VIOLATION'] ) #drop lines with NA
 newpli = newpli.reset_index()
-newpli = newpli.drop(['index','PARID','index',u'PROPERTYOWNER',
+newpli = newpli.drop(['index','PARID','index',u'PROPERTYOWNER', #remove unneeded columns
     u'PROPERTYCITY', u'PROPERTYSTATE', u'PROPERTYUNIT', u'PROPERTYZIP',
     u'MUNICODE', u'MUNIDESC', u'SCHOOLCODE', u'SCHOOLDESC', u'NEIGHCODE',
     u'TAXCODE', u'TAXDESC', u'OWNERCODE', u'OWNERDESC', u'STATECODE',
@@ -142,6 +144,7 @@ dfs = [result1,result2,result3,result4,result6,result7,result8,numerical]
 pcafinal = reduce(lambda left,right: pd.merge(left,right,on= [ "PROPERTYHOUSENUM", "PROPERTYADDRESS"] ), dfs)
 
 plipca1 = pd.merge(pcafinal, newpli, how = 'left', left_on =[ "PROPERTYHOUSENUM", "PROPERTYADDRESS"], right_on = [ "PROPERTYHOUSENUM", "PROPERTYADDRESS"] )
+#N- features cleaning done (plipca1 has all features)
 
 #loading fire incidents csvs
 fire_pre14 = pd.read_csv('data/Fire_Incidents_Pre14.csv',encoding = 'latin-1',dtype={'street':'str','number':'str'})
@@ -157,7 +160,7 @@ fire_pre14['street'] = fire_pre14['street'].str.strip() +' ' +fire_pre14['st_typ
 #reading the fire_historicalfile
 fire_historical = pd.read_csv('data/Fire_Incidents_Historical.csv',encoding = 'utf-8',dtype={'street':'str','number':'str'})
 
-#deleting columns not required
+#deleting columns not required - N- manual removal of features
 del fire_historical['inci_id']
 del fire_historical['alm_dttm']
 del fire_historical['arv_dttm']
@@ -297,11 +300,11 @@ for col,val in fire_historical['full.code'].value_counts().iteritems():
 
 fire_historical = fire_historical.drop_duplicates()
 
-#joining plipca with fireincidents
+#joining plipca with fireincidents -N final data!
 pcafire = pd.merge(plipca1, fire_historical, how = 'left', left_on =['PROPERTYADDRESS','PROPERTYHOUSENUM'],
         right_on = ['street','number'])
 
-# making the fire column with all type 100s as fires
+# making the fire column with all type 100s as fires -N: important!
 pcafire['fire'] = pcafire['full.code'].astype(str).str[0]
 pcafire.loc[pcafire.fire == '1', 'fire'] = 'fire'
 pcafire.loc[pcafire.fire != 'fire', 'fire'] = 'No fire'
@@ -312,7 +315,7 @@ pcafire1 = pcafire[(pcafire.CALL_CREATED_DATE >= pcafire.INSPECTION_DATE )]
 pcafire1 = pcafire[(pcafire.CALL_CREATED_DATE >= pcafire.INSPECTION_DATE )]
 pcafire1 = pcafire1[pd.notnull(pcafire1.INSPECTION_DATE)]
 
-#checking if violation is in the same year as the fire and keeping only those
+#checking if violation is in the same year as the fire and keeping only those -N: the "time dependent" feature generation?"
 pcafire2 = pcafire1[(pcafire1.violation_year == pcafire1.fire_year)]
 
 #joining all rows with no pli violations
@@ -329,6 +332,8 @@ pcafire_nopli['full.code'][pcafire_nopli['fire'] == 'fire'] = None
 combined_df  = pcafire_nopli.append(pcafire2, ignore_index=True)
 
 combined_df.to_csv('data/Final_Combined_Df.csv')
+
+#N- =================== DATA CLEANING DONE, START MODEL =======================
 
 #importing the necessary libraries
 from sklearn import datasets, linear_model, cross_validation, grid_search
@@ -358,14 +363,15 @@ combined_df = combined_df[combined_df.USEDESC!= 'VACANT COMMERCIAL LAND']
 #converting back to 1 and 0
 combined_df['fire'] = combined_df['fire'].map({'fire': 1, 'No fire': 0})
 
-#one hot encoding the features
+#one hot encoding the features -N: make categorial values into numeric values
 ohe9 = pd.get_dummies(combined_df['VIOLATION'])
 ohe8 = pd.get_dummies(combined_df['full.code'])
 ohe10 = pd.get_dummies(combined_df['INSPECTION_RESULT'])
 
-#concatenating the features together
+#concatenating the features together -N:this is all the fields we're using!?
 combined_df1 = pd.concat([combined_df[['PROPERTYADDRESS','PROPERTYHOUSENUM','CALL_CREATED_DATE','fire','fire_year']],ohe8,ohe9,ohe10], axis=1)
 
+#-N: ==split into test and train data from here
 
 #PREPARING THE TESTING DATA (6 months of data)
 
@@ -393,6 +399,7 @@ ohe5 = pd.get_dummies(test_data['NEIGHCODE'])
 ohe6 = pd.get_dummies(test_data['TAXDESC'])
 ohe7 = pd.get_dummies(test_data['USEDESC'])
 
+#N- used later when creating the results excel sheet
 state_desc = test_data['STATEDESC']
 school_desc= test_data['SCHOOLDESC']
 owner_desc= test_data['OWNERDESC']
@@ -519,6 +526,9 @@ Results = pd.DataFrame(cols)
 
 #Writing results as a csv
 Results.to_csv('data/Results.csv')
+
+
+#N- ==== some concluding analysis ====
 
 #Plotting the ROC curve
 plt.title('Receiver Operating Characteristic')
