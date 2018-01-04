@@ -1,5 +1,3 @@
-
-
 #### Created as part of the Metro21 Fire Risk Analysis project
 #### In partnership with the City of Pittsburgh's Department of Innovation and Performance, and the Pittsburgh Bureau of Fire
 
@@ -14,6 +12,9 @@
 
 
 #importing relevant libraries
+import matplotlib
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
 import pandas as pd
 import numpy as np
 import sqlalchemy as sa
@@ -46,9 +47,11 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 # =============================#1: CLEAN PLI & PITT DATA========================
 # Reading plidata
-plidata = pd.read_csv('datasets/pli.csv',encoding = 'utf-8',dtype={'STREET_NUM':'str','STREET_NAME':'str'}, low_memory=False)
+plidata = pd.read_csv('/home/linadmin/FirePred/datasets/pli.csv',
+                      encoding = 'utf-8',dtype={'STREET_NUM':'str','STREET_NAME':'str'}, low_memory=False)
 #Reading city of Pittsburgh dataset
-pittdata = pd.read_csv('datasets/pittdata.csv',dtype={'PROPERTYADDRESS':'str','PROPERTYHOUSENUM':'str','CLASSDESC':'str'}, low_memory=False)
+pittdata = pd.read_csv('/home/linadmin/FirePred/datasets/pittdata.csv',
+                       dtype={'PROPERTYADDRESS':'str','PROPERTYHOUSENUM':'str','CLASSDESC':'str'}, low_memory=False)
 
 #removing extra whitespaces
 plidata['STREET_NAME'] = plidata['STREET_NAME'].str.strip()
@@ -65,14 +68,15 @@ pittdata = pittdata.rename(columns={pittdata.columns[0]:'PARID'})
 pittdata = pittdata.drop_duplicates()
 
 #merging pli with city of pitt
-plipca = pd.merge(pittdata, plidata[['PARCEL','INSPECTION_DATE','INSPECTION_RESULT','VIOLATION']], how = 'left', left_on =['PARID'], right_on = ['PARCEL'] )
+plipca = pd.merge(pittdata, plidata[['PARCEL','INSPECTION_DATE','INSPECTION_RESULT','VIOLATION']], how = 'left',
+                  left_on =['PARID'], right_on = ['PARCEL'] )
 plipca = plipca.drop_duplicates()
 
 
 #dropping nas
 newpli = plipca.dropna(subset =['PARCEL','INSPECTION_DATE','INSPECTION_RESULT','VIOLATION'] )
 newpli = newpli.reset_index()
-"""newpli = newpli.drop(['index','PARID','index',
+newpli = newpli.drop(['index','PARID','index',
     u'PROPERTYCITY', u'PROPERTYSTATE', u'PROPERTYUNIT', u'PROPERTYZIP',
     u'MUNICODE', u'MUNIDESC', u'SCHOOLCODE', u'SCHOOLDESC', u'LEGAL1',
     u'LEGAL2', u'LEGAL3', u'NEIGHCODE',
@@ -81,19 +85,6 @@ newpli = newpli.reset_index()
     u'CLASSDESC', u'USECODE', u'USEDESC', u'LOTAREA', u'SALEDATE',
     u'SALEPRICE', u'SALECODE', u'SALEDESC', u'DEEDBOOK', u'DEEDPAGE',
     u'CHANGENOTICEADDRESS1', u'CHANGENOTICEADDRESS2',
-    u'CHANGENOTICEADDRESS3', u'CHANGENOTICEADDRESS4', u'COUNTYBUILDING',
-    u'COUNTYLAND', u'COUNTYTOTAL', u'COUNTYEXEMPTBLDG', u'LOCALBUILDING',
-    u'LOCALLAND', u'LOCALTOTAL', u'FAIRMARKETBUILDING', u'FAIRMARKETLAND',
-    u'FAIRMARKETTOTAL', u'PARCEL'], axis=1)"""
-
-newpli = newpli.drop(['index','PARID','index',u'PROPERTYOWNER', #**remove unneeded columns
-    u'PROPERTYCITY', u'PROPERTYSTATE', u'PROPERTYUNIT', u'PROPERTYZIP',
-    u'MUNICODE', u'MUNIDESC', u'SCHOOLCODE', u'SCHOOLDESC', u'NEIGHCODE',
-    u'TAXCODE', u'TAXDESC', u'OWNERCODE', u'OWNERDESC', u'CLASSCODE',
-    u'CLASSDESC', u'USECODE', u'USEDESC', u'LOTAREA', u'SALEDATE',
-    u'SALEPRICE', u'SALECODE', u'SALEDESC', u'DEEDBOOK', u'DEEDPAGE',
-    u'AGENT', u'TAXFULLADDRESS1', u'TAXFULLADDRESS2', u'TAXFULLADDRESS3',
-    u'TAXFULLADDRESS4', u'CHANGENOTICEADDRESS1', u'CHANGENOTICEADDRESS2',
     u'CHANGENOTICEADDRESS3', u'CHANGENOTICEADDRESS4', u'COUNTYBUILDING',
     u'COUNTYLAND', u'COUNTYTOTAL', u'COUNTYEXEMPTBLDG', u'LOCALBUILDING',
     u'LOCALLAND', u'LOCALTOTAL', u'FAIRMARKETBUILDING', u'FAIRMARKETLAND',
@@ -175,10 +166,11 @@ plipca1 = pd.merge(pcafinal, newpli, how = 'left', left_on =[ "PROPERTYHOUSENUM"
 
 
 # =====================#2 CLEAN FIRE INCIDENT DATA====================
-
 #loading fire incidents csvs
-fire_pre14 = pd.read_csv('datasets/Fire_Incidents_Pre14.csv',encoding = 'latin-1',dtype={'street':'str','number':'str'}, low_memory=False)
-fire_new = pd.read_csv('datasets/Fire_Incidents_New.csv',encoding = 'utf-8',dtype={'street':'str','number':'str'}, low_memory=False)
+fire_pre14 = pd.read_csv('/home/linadmin/FirePred/datasets/Fire_Incidents_Pre14.csv',encoding = 'latin-1',
+                         dtype={'street':'str','number':'str'}, low_memory=False)
+fire_new = pd.read_csv('/home/linadmin/FirePred/datasets/Fire_Incidents_New.csv',encoding = 'utf-8',
+                       dtype={'street':'str','number':'str'}, low_memory=False)
 
 #cleaning columns of fire_pre14
 fire_pre14['full.code'] = fire_pre14['full.code'].str.replace('  -',' -')
@@ -267,6 +259,7 @@ fire_new = fire_new.drop_duplicates()
 
 
 # =====================#3 JOIN TWO DATASETS AND FINAL CLEANING =====================
+#joining plipca with fireincidents
 pcafire = pd.merge(plipca1, fire_new, how = 'left', left_on =['PROPERTYADDRESS','PROPERTYHOUSENUM'],
         right_on = ['street','number'])
 
@@ -275,10 +268,6 @@ pcafire['fire'] = pcafire['full.code'].astype(str).str[0]
 pcafire.loc[pcafire.fire == '1', 'fire'] = 'fire'
 pcafire.loc[pcafire.fire != 'fire', 'fire'] = 'No fire'
 pcafire['full.code'][pcafire['fire'] == 'fire'] = None
-
-#Removing vacant commerical land
-pcafire = pcafire[pcafire.USEDESC!= 'VACANT COMMERCIAL LAND']
-
 
 #Fire occured after inspection
 pcafire1 = pcafire[(pcafire.CALL_CREATED_DATE >= pcafire.INSPECTION_DATE )]
@@ -289,7 +278,9 @@ pcafire1 = pcafire1[pd.notnull(pcafire1.INSPECTION_DATE)]
 pcafire2 = pcafire1[(pcafire1.violation_year == pcafire1.fire_year)]
 
 #joining all rows with no pli violations
-fire_nopli = pd.concat([fire_new, pcafire2[['number','street','CALL_CREATED_DATE','full.code','response_time','fire_year']], pcafire2[['number','street','CALL_CREATED_DATE','full.code','response_time','fire_year']]]).drop_duplicates(keep=False)
+fire_nopli = pd.concat([fire_new, pcafire2[['number','street','CALL_CREATED_DATE','full.code','response_time',
+                                            'fire_year']], pcafire2[['number','street','CALL_CREATED_DATE','full.code',
+                                                                     'response_time','fire_year']]]).drop_duplicates(keep=False)
 pcafire_nopli = pd.merge(pcafinal, fire_nopli, how = 'left', left_on =['PROPERTYADDRESS','PROPERTYHOUSENUM'],
         right_on = ['street','number'])
 
@@ -308,10 +299,14 @@ combined_df  = pcafire_nopli.append(pcafire2, ignore_index=True)
 # this part splits the data into training and testing, then coverts the log
 # of incident/inspection violation data and convert it to building addresses
 
+#Reading the cleaned dataset
+#combined_df = pd.read_csv('Final_Combined_Df.csv')
+
+#Removing vacant commerical land
+combined_df = combined_df[combined_df.USEDESC!= 'VACANT COMMERCIAL LAND']
 
 #converting back to 1 and 0
 combined_df['fire'] = combined_df['fire'].map({'fire': 1, 'No fire': 0})
-
 
 #one hot encoding the features
 ohe9 = pd.get_dummies(combined_df['VIOLATION'])
@@ -319,7 +314,8 @@ ohe8 = pd.get_dummies(combined_df['full.code'])
 ohe10 = pd.get_dummies(combined_df['INSPECTION_RESULT'])
 
 #concatenating the features together
-combined_df1 = pd.concat([combined_df[['PROPERTYADDRESS','PROPERTYHOUSENUM','CALL_CREATED_DATE','fire','fire_year']],ohe8,ohe9,ohe10], axis=1)
+combined_df1 = pd.concat([combined_df[['PROPERTYADDRESS','PROPERTYHOUSENUM','CALL_CREATED_DATE','fire','fire_year']],
+                          ohe8,ohe9,ohe10], axis=1)
 
 
 #PREPARING THE TESTING DATA (final 6 months of data)
@@ -366,7 +362,6 @@ ohe_del = ['CALL_CREATED_DATE','CLASSDESC','SCHOOLDESC','OWNERDESC','MUNIDESC',
            'NEIGHCODE','TAXDESC','USEDESC','fire_year','PROPERTYADDRESS','PROPERTYHOUSENUM']
 for col in ohe_del:
     del test_data[col]
-
 #Concatenating everything back together
 encoded_testdata = pd.concat([test_data,ohe1,ohe2,ohe3,ohe4,ohe5,ohe6,ohe7], axis=1)
 
@@ -419,7 +414,6 @@ y_test = np.reshape(fireVarTest.values,[fireVarTest.shape[0],])
 
 
 # =========================== #5 MODEL & PREDICTION =============================
-
 #The XG Boost model
 #Grid Search was taking too long a time to run hence did hyperparameter tuning manually and arrived
 #at the below parameters fiving the most optimal result
@@ -444,11 +438,27 @@ kappa = cohen_kappa_score(real, pred)
 fpr, tpr, thresholds = metrics.roc_curve(y_test, pred, pos_label=1)
 roc_auc = metrics.auc(fpr, tpr)
 
-print 'Accuracy = ', float(cm[0][0] + cm[1][1])/len(real)
-print 'kappa score = ', kappa
-print 'AUC Score = ', metrics.auc(fpr, tpr)
-print 'recall = ',tpr[1]
-print 'precision = ',float(cm[1][1])/(cm[1][1]+cm[0][1])
+acc = 'Accuracy = {0}'.format(float(cm[0][0] + cm[1][1])/len(real))
+kapp = 'kappa score = {0}'.format(kappa)
+auc = 'AUC Score = {0}'.format(metrics.auc(fpr, tpr))
+recall = 'recall = {0}'.format(tpr[1])
+precis = 'precision = {0}'.format(float(cm[1][1])/(cm[1][1]+cm[0][1]))
+
+print acc
+print kapp
+print auc
+print recall
+print precis
+
+### Write model performance to log file:
+log_path = "/home/linadmin/FirePred/logs/"
+with open('{0}ModelPerformance_{1}.txt'.format(log_path, datetime.datetime.now()), 'a') as log_file:
+    log_file.write(cm)
+    log_file.write(acc)
+    log_file.write(kapp)
+    log_file.write(auc)
+    log_file.write(recall)
+    log_file.write(precis)
 
 #Getting the probability scores
 predictions = model.predict_proba(X_test)
@@ -466,8 +476,12 @@ cols = {"Address": addresses, "Fire":pred,"RiskScore":risk,"state_desc":state_de
 
 Results = pd.DataFrame(cols)
 
-#Writing results as a csv
-Results.to_csv('datasets/Results.csv')
+#Writing results to the updating Results.csv
+Results.to_csv('/home/linadmin/FirePred/datasets/Results.csv')
+
+
+# Writing results to a log file
+Results.to_csv('{0}Results_{1}.csv'.format(log_path, datetime.datetime.now()))
 
 #Plotting the ROC curve
 plt.title('Receiver Operating Characteristic')
@@ -479,7 +493,11 @@ plt.xlim([-0.1,1.2])
 plt.ylim([-0.1,1.2])
 plt.ylabel('True Positive Rate')
 plt.xlabel('False Positive Rate')
-plt.show()
+#plt.show()
+
+png_path = "/home/linadmin/FirePred/images/"
+roc_png = "{0}ROC_{1}.png".format(png_path, datetime.datetime.now())
+plt.savefig(roc_png, dpi=150)
 
 #Tree model for getting features importance
 clf = ExtraTreesClassifier()
@@ -500,4 +518,7 @@ plt.xticks(y_pos, important_features.index[0:20], rotation = (90), fontsize = 11
 plt.ylabel('Feature Importance Scores')
 plt.title('Feature Importance')
 
-plt.show()
+features_png = "{0}FeatureImportance_{1}.png".format(png_path, datetime.datetime.now())
+plt.savefig(features_png, dpi=150)
+
+#plt.show()
