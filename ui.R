@@ -3,7 +3,7 @@
 # Date: May 27, 2017
 
 getwd()
-setwd("/Users/mmadaio/R Projects/Metro21")
+setwd("/home/nathan/Documents/Student_Data/dev/2017_suds-fire")
 # This is the ui part of the dashboard
 
 library(shiny)
