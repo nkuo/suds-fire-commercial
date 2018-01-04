@@ -280,7 +280,6 @@ pcafire['full.code'][pcafire['fire'] == 'fire'] = None
 pcafire = pcafire[pcafire.USEDESC!= 'VACANT COMMERCIAL LAND']
 
 
-""" ?????????????????????????????????????????? start
 #Fire occured after inspection
 pcafire1 = pcafire[(pcafire.CALL_CREATED_DATE >= pcafire.INSPECTION_DATE )]
 pcafire1 = pcafire[(pcafire.CALL_CREATED_DATE >= pcafire.INSPECTION_DATE )]
@@ -301,10 +300,7 @@ pcafire_nopli['full.code'][pcafire_nopli['fire'] == 'fire'] = None
 
 #combined_df is the final file
 combined_df  = pcafire_nopli.append(pcafire2, ignore_index=True)
-""" #?????????????????????????????????????????? end
-combined_df = pcafire
 #combined_df.to_csv('datasets/Final_Combined_Df.csv')
-
 # ================= #3 DONE, ^this is final cleaned dataframe ===================
 
 
@@ -366,17 +362,10 @@ address= test_data['PROPERTYADDRESS']
 housenum= test_data['PROPERTYHOUSENUM']
 
 #Deleting features not required anymore or already one hot encoded for the model
-del test_data['CALL_CREATED_DATE']
-del test_data['CLASSDESC']
-del test_data['SCHOOLDESC']
-del test_data['OWNERDESC']
-del test_data['MUNIDESC']
-del test_data['NEIGHCODE']
-del test_data['TAXDESC']
-del test_data['USEDESC']
-del test_data['fire_year']
-del test_data['PROPERTYADDRESS']
-del test_data['PROPERTYHOUSENUM']
+ohe_del = ['CALL_CREATED_DATE','CLASSDESC','SCHOOLDESC','OWNERDESC','MUNIDESC',
+           'NEIGHCODE','TAXDESC','USEDESC','fire_year','PROPERTYADDRESS','PROPERTYHOUSENUM']
+for col in ohe_del:
+    del test_data[col]
 
 #Concatenating everything back together
 encoded_testdata = pd.concat([test_data,ohe1,ohe2,ohe3,ohe4,ohe5,ohe6,ohe7], axis=1)
@@ -408,17 +397,8 @@ ohe6 = pd.get_dummies(train_data['TAXDESC'])
 ohe7 = pd.get_dummies(train_data['USEDESC'])
 
 #deleting the categories
-del train_data['CLASSDESC']
-del train_data['CALL_CREATED_DATE']
-del train_data['SCHOOLDESC']
-del train_data['OWNERDESC']
-del train_data['MUNIDESC']
-del train_data['NEIGHCODE']
-del train_data['TAXDESC']
-del train_data['USEDESC']
-del train_data['fire_year']
-del train_data['PROPERTYADDRESS']
-del train_data['PROPERTYHOUSENUM']
+for col in ohe_del:
+    del train_data[col]
 
 #concatenating all the created features together
 encoded_traindata = pd.concat([train_data,ohe1,ohe2,ohe3,ohe4,ohe5,ohe6,ohe7], axis=1)
