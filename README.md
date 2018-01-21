@@ -1,6 +1,7 @@
 # suds-fire-commercial
 
-This project is to further Michael's work on Fire Risk Modeling for the Pittsburgh fire department.
+NOW DEPRECIATED, see: https://github.com/nkuo/fire_risk_analysis
+This project is to further previous work on Fire Risk Modeling for Metro 21 and the Pittsburgh fire department.
 
 To run:
 
